@@ -28,6 +28,7 @@
 @import "pageinfo";
 @import "taxonomy";
 @import "drawio";
+@import "attachments";
 
 @if $td-enable-google-fonts {
     @import url($web-font-path);

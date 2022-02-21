@@ -79,3 +79,8 @@ other = "If you want to get more involved by contributing to {{ .Site.Title }}, 
 other = "You can find out how to contribute to these docs in our"
 [community_guideline]
 other = "Contribution Guidelines"
+
+
+# Shortcodes
+[sc_attachments]
+other = "Attachments"

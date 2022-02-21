@@ -81,3 +81,8 @@ other = "Wenn Du aktiv beteiligen und einen Beitrag zu {{ .Site.Title }} leisten
 other = "Wie Du selbst zu diesen Dokumenten beitragen kannst, kannst Du nachlesen in unseren"
 [community_guideline]
 other = "Richtlinien für Beiträge"
+
+
+# Shortcodes
+[sc_attachments]
+other = "Anhänge"
