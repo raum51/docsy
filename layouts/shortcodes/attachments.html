@@ -1,6 +1,7 @@
 {{ $title := .Get "title" | default (T "sc_attachments")}}
 {{ $icon := .Get "icon" | default "fas fa-paperclip"}}
 {{ $folder := .Get "folder"}}
+{{ $static_folder := .Get "static_folder" | default false}}
 {{ $recursive := .Get "recursive" | default true}}
 {{ $exclude := .Get "exclude" | default ".md,.markdown" }}
 {{ $filter := .Get "filter" | default "." }}
@@ -17,46 +18,47 @@
 		{{ with $title }}{{- . -}}{{ end }}
 	</label>
 	<div class="card-body attachments-files">
-    <!-- {{ with $title }}{{- . -}}{{ end }} -->
-      {{ with $folder }}
-        <!-- {{ $path := replace (printf "./content/%s/%s%s" $.Page.File.Lang $.Page.File.Dir .) "\\" "/" }} -->
-        {{ $path := path.Join "content/" $.Page.File.Lang $.Page.File.Dir . }}
-        {{ $file_list := newScratch }}
-        {{ template "recursive-files" (dict "path" $path "folder" . "recursive" true "exclude" $exclude "filter" $filter "show_folder" $show_folder "file_list" $file_list)}}
-          {{ with ($file_list.Get "files") }}
-            <ul>
-              {{ range sort . }}
-                {{ $filestat := os.Stat (path.Join "content/" $.Page.File.Lang $.Page.File.Dir .) }}
-                {{ $dirFile := path.Split . }}
-                {{ $filepath := printf "%s%s" ($dirFile.Dir | urlize) $dirFile.File }}
+    {{ with $folder }}
+      {{ $path := (cond $static_folder (.) (path.Join "content/" $.Page.File.Lang $.Page.File.Dir .))}}
+      <p>path: {{ ($path | urlize) }}</p>
+      <p>static_folder:{{ $static_folder }}</p>
+      {{ $file_list := newScratch }}
+      {{ template "recursive-files" (dict "path" $path "folder" . "recursive" true "exclude" $exclude "filter" $filter "show_folder" $show_folder "file_list" $file_list)}}
+        {{ with ($file_list.Get "files") }}
+          <ul>
+            {{ range sort . }}
+              {{ $filestatpath := (cond $static_folder . (path.Join "content/" $.Page.File.Lang $.Page.File.Dir .))}}
+              {{ $filestat := os.Stat ($filestatpath) }}
+              {{ $dirFile := path.Split . }}
+              {{ $filepath := printf "%s%s" ($dirFile.Dir | urlize) $dirFile.File }}
+              <li>
+                <a href="{{ $filepath }}" >{{ with $show_folder }}{{- ($dirFile.Dir | urlize) -}}{{ end }}{{$filestat.Name}} {{ template "format-file-size" (dict "file_size" $filestat.Size "num_prec" $num_prec "num_fmt" $num_fmt "num_fmt_del" $num_fmt_del) }}</a> - filepath: {{ $filepath }}
+              </li>
+            {{ end }}
+          </ul>
+        {{ else }}
+          <p>{{- $empty_list -}}</p>
+        {{ end }}
+    {{ else }}
+      {{ with (.Page.Resources.Match $match) }}
+        <ul>
+            {{ $.Scratch.Set "counter" 0 }}
+            {{ range sort . "Title" }}
+              {{ if (findRE $filter ( replace .RelPermalink $.Page.RelPermalink "" 1 )) }}
+                {{ $.Scratch.Set "counter" (add ($.Scratch.Get "counter") 1) }}
+                {{ $filestat := os.Stat (path.Join "content/" $.Page.File.Lang $.Page.File.Dir ( replace .RelPermalink $.Page.RelPermalink "" 1 )) }}
                 <li>
-                  <a href="{{ $filepath }}" >{{ with $show_folder }}{{- ($dirFile.Dir | urlize) -}}{{ end }}{{$filestat.Name}} {{ template "format-file-size" (dict "file_size" $filestat.Size "num_prec" $num_prec "num_fmt" $num_fmt "num_fmt_del" $num_fmt_del) }}</a>
+                  <a href="{{ .RelPermalink }}" >{{.Title}} {{ template "format-file-size" (dict "file_size" $filestat.Size "num_prec" $num_prec "num_fmt" $num_fmt "num_fmt_del" $num_fmt_del) }}</a>
+                  {{ with .Params.description }}<label class="attachments-description">{{- . -}}</label>{{ end }}
                 </li>
               {{ end }}
-            </ul>
-          {{ else }}
-            <p>{{- $empty_list -}}</p>
-          {{ end }}
-      {{ else }}
-        {{ with (.Page.Resources.Match $match) }}
-          <ul>
-              {{ $.Scratch.Set "counter" 0 }}
-              {{ range sort . "Title" }}
-                {{ if (findRE $filter ( replace .RelPermalink $.Page.RelPermalink "" 1 )) }}
-                  {{ $.Scratch.Set "counter" (add ($.Scratch.Get "counter") 1) }}
-                  {{ $filestat := os.Stat (path.Join "content/" $.Page.File.Lang $.Page.File.Dir ( replace .RelPermalink $.Page.RelPermalink "" 1 )) }}
-                  <li>
-                    <a href="{{ .RelPermalink }}" >{{.Title}} {{ template "format-file-size" (dict "file_size" $filestat.Size "num_prec" $num_prec "num_fmt" $num_fmt "num_fmt_del" $num_fmt_del) }}</a>
-                    {{ with .Params.description }}<label class="attachments-description">{{- . -}}</label>{{ end }}
-                  </li>
-                {{ end }}
-              {{end}}
-              {{ if (eq ($.Scratch.Get "counter") 0 )}}<li>{{- $empty_list -}}</li>{{ end }}
-          </ul>
-        {{else}}
-          <p>{{- $empty_list -}}</p>
-        {{end}}
+            {{end}}
+            {{ if (eq ($.Scratch.Get "counter") 0 )}}<li>{{- $empty_list -}}</li>{{ end }}
+        </ul>
+      {{else}}
+        <p>{{- $empty_list -}}</p>
       {{end}}
+    {{end}}
 	</div>
   {{ with .Inner }}
     <div class="card-footer attachments-inner">
