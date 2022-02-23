@@ -1,7 +1,8 @@
 {{ $title := .Get "title" | default (T "sc_attachments")}}
 {{ $icon := .Get "icon" | default "fas fa-paperclip"}}
 {{ $folder := .Get "folder"}}
-{{ $static_folder := .Get "static_folder" | default false}}
+{{ $folder_root := .Get "folder_root" | default (path.Join "content/" $.Page.File.Lang $.Page.File.Dir) }}
+{{ $static_folder := (ne (.Get "folder_root") "")}}
 {{ $recursive := .Get "recursive" | default true}}
 {{ $exclude := .Get "exclude" | default ".md,.markdown" }}
 {{ $filter := .Get "filter" | default "." }}
@@ -19,18 +20,29 @@
 	</label>
 	<div class="card-body attachments-files">
     {{ with $folder }}
-      {{ $path := (cond $static_folder (.) (path.Join "content/" $.Page.File.Lang $.Page.File.Dir .))}}
-      <p>path: {{ ($path | urlize) }}</p>
-      <p>static_folder:{{ $static_folder }}</p>
+      {{ $path := (path.Join $folder_root .)}}
+      <!-- <p>path: {{ $path }}</p>
+      <p>path | urlize: {{ ($path | urlize) }}</p>
+      <p>folder_root: {{ $folder_root }}</p>
+      <p>static_folder: {{ $static_folder }}</p> -->
       {{ $file_list := newScratch }}
       {{ template "recursive-files" (dict "path" $path "folder" . "recursive" true "exclude" $exclude "filter" $filter "show_folder" $show_folder "file_list" $file_list)}}
         {{ with ($file_list.Get "files") }}
           <ul>
             {{ range sort . }}
-              {{ $filestatpath := (cond $static_folder . (path.Join "content/" $.Page.File.Lang $.Page.File.Dir .))}}
-              {{ $filestat := os.Stat ($filestatpath) }}
+              <!-- <li>{{ . }}</li> -->
+              
               {{ $dirFile := path.Split . }}
-              {{ $filepath := printf "%s%s" ($dirFile.Dir | urlize) $dirFile.File }}
+              <!-- <li>dirFile.Dir: {{ $dirFile.Dir }}</li>
+              <li>dirFile.File: {{ $dirFile.File }}</li> -->
+              
+              {{ $filestat := os.Stat (path.Join $folder_root .) }}
+              <!-- {{ $filepath := printf "%s%s" ($dirFile.Dir | urlize) $dirFile.File }} -->
+              {{ $filepath := (cond $static_folder (printf "%s%s" "/" .) (printf "%s%s" ($dirFile.Dir | urlize) $dirFile.File))}}
+              <!-- <li>path: {{ $path }}</li>
+              <li>filestat.Name: {{ $filestat.Name }}</li>
+              <li>direct content: {{ . }}</li>
+              <li>filepath: {{ $filepath }}</li> -->
               <li>
                 <a href="{{ $filepath }}" >{{ with $show_folder }}{{- ($dirFile.Dir | urlize) -}}{{ end }}{{$filestat.Name}} {{ template "format-file-size" (dict "file_size" $filestat.Size "num_prec" $num_prec "num_fmt" $num_fmt "num_fmt_del" $num_fmt_del) }}</a> - filepath: {{ $filepath }}
               </li>
